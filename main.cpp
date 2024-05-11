@@ -1,12 +1,12 @@
-#include <bits/stdc++.h>
+//#include <bits/stdc++.h>
 #include <fstream>
 #include <iostream>
 #include <random>
 using namespace std;
 
-unordered_map<int, vector<int>> cellNets; // contains what nets each cell is a part of
-vector<vector<int>> grid, nets;
-vector<pair<int, int>> cells; // contains x,y coordinates
+unordered_map<int, vector<int> > cellNets; // contains what nets each cell is a part of
+vector<vector<int> > grid, nets;
+vector<pair<int, int> > cells; // contains x,y coordinates
 vector<int> nets_wire_lengths;
 string test_case_file = "tests/d0.txt";
 int numCells, numNets, numRows, numCols;
@@ -31,8 +31,7 @@ void readNetlist(const std::string &filename, int &numCells, int &numNets, int &
       int cell;
       file >> cell;
       nets[i].push_back(cell);
-      cellNets[cell].push_back(
-          i); // see if cell was alr encountered, if not, map will add a new key
+      cellNets[cell].push_back(i); // see if cell was alr encountered, if not, map will add a new key
     }
     nets[i].resize(numComponents);
   }
@@ -55,7 +54,7 @@ void readNetlist(const std::string &filename, int &numCells, int &numNets, int &
 }
 
 void initial_placement() { // placing cells randomly in the grid
-  vector<pair<int, int>> random_indices;
+  vector<pair<int, int> > random_indices;
   for (int r = 0; r < numRows; r++) {
     for (int c = 0; c < numCols; c++)
       random_indices.emplace_back(r, c);
@@ -90,9 +89,9 @@ void print_grid() {
       if (grid[i][j] == -1)
         cout << "__ ";
       else if (grid[i][j] >= 0 && grid[i][j] <= 9)
-        cout << "0" << grid[i][j] << " ";
+        cout << "0" << grid[i][j] << " (" << cells[grid[i][j]].first << ", " << cells[grid[i][j]].second << ") ";
       else
-        cout << grid[i][j] << " ";
+        cout << grid[i][j] << " (" << cells[grid[i][j]].first << ", " << cells[grid[i][j]].second << ")";
     }
     cout << endl;
   }
@@ -108,6 +107,77 @@ void print_binary() {
     }
     cout << endl;
   }
+}
+
+void simulated_annealing(double& cost, double initial_temp, double final_temp){
+    double temp = initial_temp;
+    int moves;
+    while (temp > final_temp){
+      moves = 20*numCells;
+      while (moves--){
+        // Get first random cell and make sure it is not an empty cell
+        int x = rand() % numCells;
+        int row_x = cells[x].first;
+        int col_x = cells[x].second;
+        // Get second random cell
+        int y = rand() % (numRows * numCols);
+        int row_y = y / numCols;
+        int col_y = y % numCols;
+
+        // Skip if selecting the same cell
+        if (row_x == row_y && col_x == col_y) continue;
+        // Swap the cells
+        int x_val = grid[row_x][col_x];
+        cout << x << " " << grid[row_x][col_x] << " " << x_val << " " << row_x << " " << col_x << " " << cells[x].first << " " << cells[x].second << " " << endl;
+
+        //out << x_val << endl;
+        int y_val = grid[row_y][col_y]; // can be -1
+        if (x != x_val) exit(-1);
+        grid[row_x][col_x] = y_val;
+        grid[row_y][col_y] = x_val;
+        if (y_val != -1) swap(cells[x_val], cells[y_val]);
+        else{
+          cells[x_val].first = row_y;
+          cells[x_val].second = col_y;
+        }
+        // cells[x_val].first = row_y;
+        // cells[x_val].second = col_y;
+        // //if(y_val != -1) {
+        //     cells[y_val].first = row_x;
+        //     cells[y_val].second = col_x;
+        // //}
+
+        double new_cost = 0.0;
+        for (int i = 0; i < numNets; i++) new_cost += calculateWireLengths(i); // calculate the change in WL (ΔL) due to the swap
+        double change = new_cost - cost;
+        if (change < 0){ // accept the swapping
+            cost = new_cost;
+        }
+        else{
+            double prob = (1 - exp((-1*(change))/temp));
+            if (prob < 0.5){
+                cost = new_cost;
+            }
+            else{
+                grid[row_x][col_x] = x_val;
+                grid[row_y][col_y] = y_val;
+                cells[x_val].first = row_x;
+                cells[x_val].second = col_x;
+                swap(cells[x_val], cells[y_val]);
+                if (y_val != -1) swap(cells[x_val], cells[y_val]);
+                else{
+                  cells[x_val].first = row_x;
+                  cells[x_val].second = col_x;
+                }
+                // //if(y_val != -1) {
+                //     cells[y_val].first = row_y;
+                //     cells[y_val].second = col_y;
+                // //}
+            }
+        }
+      }
+        temp *= 0.95;
+    }
 }
 
 int main() {
@@ -134,5 +204,25 @@ int main() {
   cout << "Initial Temp: " << initial_temp << " Current Temp: " << curr_temp
        << " Final Temp: " << final_temp << endl;
 
+
+  simulated_annealing(cost, initial_temp, final_temp);
+  cout << "Final Grid: " << endl;
+  print_grid();
+  //cost = 0;
+  //or (int i = 0; i < numNets; i++) cost += calculateWireLengths(i);
+  cout << "Final cost: " << cost << endl; 
+  int min_x = INT_MAX, min_y = INT_MAX, max_x = INT_MIN, max_y = INT_MIN;
+  for (int i = 0; i < numNets; i++){
+  for (auto cell : nets[i]) {
+    min_x = min(min_x, cells[cell].first);
+    min_y = min(min_y, cells[cell].second);
+    max_x = max(max_x, cells[cell].first);
+    max_y = max(max_y, cells[cell].second);
+    cout << "Min_x: " << min_x << endl;
+    cout << "Min_y: " << min_y << endl;
+    cout << "Max_x: " << max_x << endl;
+    cout << "Max_y: " << max_y << endl;
+  }
+  }
   return 0;
 }
