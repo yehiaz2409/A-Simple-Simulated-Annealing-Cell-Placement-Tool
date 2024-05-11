@@ -11,7 +11,7 @@ vector<int> nets_wire_lengths;
 string test_case_file = "tests/d0.txt";
 int numCells, numNets, numRows, numCols;
 
-void readNetlist(const std::string &filename, int &numCells, int &numNets, int &numRows, int &numCols, vector<vector<int> > &nets, unordered_map<int, vector<int> > &cellNets) {
+void readNetlist(const string &filename, int &numCells, int &numNets, int &numRows, int &numCols, vector<vector<int> > &nets, unordered_map<int, vector<int> > &cellNets) {
   ifstream file(filename);
   if (!file.is_open()) {
     std::cout << "Error opening file." << endl;
@@ -89,9 +89,9 @@ void print_grid() {
       if (grid[i][j] == -1)
         cout << "__ ";
       else if (grid[i][j] >= 0 && grid[i][j] <= 9)
-        cout << "0" << grid[i][j] << " (" << cells[grid[i][j]].first << ", " << cells[grid[i][j]].second << ") ";
+        cout << "0" << grid[i][j] << " ";
       else
-        cout << grid[i][j] << " (" << cells[grid[i][j]].first << ", " << cells[grid[i][j]].second << ")";
+        cout << grid[i][j] << " ";
     }
     cout << endl;
   }
@@ -128,14 +128,20 @@ void simulated_annealing(double& cost, double initial_temp, double final_temp){
         if (row_x == row_y && col_x == col_y) continue;
         // Swap the cells
         int x_val = grid[row_x][col_x];
-        cout << x << " " << grid[row_x][col_x] << " " << x_val << " " << row_x << " " << col_x << " " << cells[x].first << " " << cells[x].second << " " << endl;
+        //cout << x << " " << grid[row_x][col_x] << " " << x_val << " " << row_x << " " << col_x << " " << cells[x].first << " " << cells[x].second << " " << endl;
 
         //out << x_val << endl;
         int y_val = grid[row_y][col_y]; // can be -1
         if (x != x_val) exit(-1);
         grid[row_x][col_x] = y_val;
         grid[row_y][col_y] = x_val;
-        if (y_val != -1) swap(cells[x_val], cells[y_val]);
+        if (y_val != -1) {
+          cells[x_val].first = row_y;
+          cells[x_val].second = col_y;
+          cells[y_val].first = row_x;
+          cells[y_val].second = col_x;
+        }
+        //swap(cells[x_val], cells[y_val]);
         else{
           cells[x_val].first = row_y;
           cells[x_val].second = col_y;
@@ -164,7 +170,14 @@ void simulated_annealing(double& cost, double initial_temp, double final_temp){
                 cells[x_val].first = row_x;
                 cells[x_val].second = col_x;
                 swap(cells[x_val], cells[y_val]);
-                if (y_val != -1) swap(cells[x_val], cells[y_val]);
+                if (y_val != -1){
+                  if (y_val != -1) {
+                    cells[x_val].first = row_x;
+                    cells[x_val].second = col_x;
+                    cells[y_val].first = row_y;
+                    cells[y_val].second = col_y;
+                  }
+                }
                 else{
                   cells[x_val].first = row_x;
                   cells[x_val].second = col_x;
@@ -212,17 +225,17 @@ int main() {
   //or (int i = 0; i < numNets; i++) cost += calculateWireLengths(i);
   cout << "Final cost: " << cost << endl; 
   int min_x = INT_MAX, min_y = INT_MAX, max_x = INT_MIN, max_y = INT_MIN;
-  for (int i = 0; i < numNets; i++){
-  for (auto cell : nets[i]) {
-    min_x = min(min_x, cells[cell].first);
-    min_y = min(min_y, cells[cell].second);
-    max_x = max(max_x, cells[cell].first);
-    max_y = max(max_y, cells[cell].second);
-    cout << "Min_x: " << min_x << endl;
-    cout << "Min_y: " << min_y << endl;
-    cout << "Max_x: " << max_x << endl;
-    cout << "Max_y: " << max_y << endl;
-  }
-  }
+  // for (int i = 0; i < numNets; i++){
+  // for (auto cell : nets[i]) {
+  //   min_x = min(min_x, cells[cell].first);
+  //   min_y = min(min_y, cells[cell].second);
+  //   max_x = max(max_x, cells[cell].first);
+  //   max_y = max(max_y, cells[cell].second);
+  //   cout << "Min_x: " << min_x << endl;
+  //   cout << "Min_y: " << min_y << endl;
+  //   cout << "Max_x: " << max_x << endl;
+  //   cout << "Max_y: " << max_y << endl;
+  // }
+  // }
   return 0;
 }
