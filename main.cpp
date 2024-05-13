@@ -87,7 +87,7 @@ void print_grid() {
   for (int i = 0; i < numRows; i++) {
     for (int j = 0; j < numCols; j++) {
       if (grid[i][j] == -1)
-        cout << "__ ";
+        cout << "-- ";
       else if (grid[i][j] >= 0 && grid[i][j] <= 9)
         cout << "0" << grid[i][j] << " ";
       else
@@ -146,12 +146,6 @@ void simulated_annealing(double& cost, double initial_temp, double final_temp){
           cells[x_val].first = row_y;
           cells[x_val].second = col_y;
         }
-        // cells[x_val].first = row_y;
-        // cells[x_val].second = col_y;
-        // //if(y_val != -1) {
-        //     cells[y_val].first = row_x;
-        //     cells[y_val].second = col_x;
-        // //}
 
         double new_cost = 0.0;
         for (int i = 0; i < numNets; i++) new_cost += calculateWireLengths(i); // calculate the change in WL (ΔL) due to the swap
@@ -160,11 +154,11 @@ void simulated_annealing(double& cost, double initial_temp, double final_temp){
             cost = new_cost;
         }
         else{
-            double prob = (1 - exp((-1*(change))/temp));
+            double prob = (1 - exp((-1*(change))/temp)); // reject the swapping with the calculated probability
             if (prob < 0.5){
                 cost = new_cost;
             }
-            else{
+            else{ // reverse the swapping
                 grid[row_x][col_x] = x_val;
                 grid[row_y][col_y] = y_val;
                 cells[x_val].first = row_x;
@@ -182,14 +176,10 @@ void simulated_annealing(double& cost, double initial_temp, double final_temp){
                   cells[x_val].first = row_x;
                   cells[x_val].second = col_x;
                 }
-                // //if(y_val != -1) {
-                //     cells[y_val].first = row_y;
-                //     cells[y_val].second = col_y;
-                // //}
             }
         }
       }
-        temp *= 0.95;
+        temp *= 0.95; // update the temperature
     }
 }
 
@@ -223,19 +213,9 @@ int main() {
   print_grid();
   //cost = 0;
   //or (int i = 0; i < numNets; i++) cost += calculateWireLengths(i);
-  cout << "Final cost: " << cost << endl; 
-  int min_x = INT_MAX, min_y = INT_MAX, max_x = INT_MIN, max_y = INT_MIN;
-  // for (int i = 0; i < numNets; i++){
-  // for (auto cell : nets[i]) {
-  //   min_x = min(min_x, cells[cell].first);
-  //   min_y = min(min_y, cells[cell].second);
-  //   max_x = max(max_x, cells[cell].first);
-  //   max_y = max(max_y, cells[cell].second);
-  //   cout << "Min_x: " << min_x << endl;
-  //   cout << "Min_y: " << min_y << endl;
-  //   cout << "Max_x: " << max_x << endl;
-  //   cout << "Max_y: " << max_y << endl;
-  // }
-  // }
+  cout << "Total wire length: " << cost << endl; 
+  std::cout << "Where:\n";
+  std::cout << "• -- : Empty site\n";
+  std::cout << "• DD : The site has the component number DD\n\n";
   return 0;
 }
