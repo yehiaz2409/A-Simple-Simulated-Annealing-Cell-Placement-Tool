@@ -9,8 +9,11 @@
 using namespace std;
 
 string test_case_file = "tests/t1.txt";
+string grid_file = "grid.txt";
 double cooling_rate = 0.95;
-
+random_device rd;
+mt19937 gen(rd());
+uniform_real_distribution<> dis(0.0, 1.0);
 unordered_map<int, vector<int> > cellNets; // contains what nets each cell is a part of
 vector<vector<int> > grid, nets;
 vector<pair<int, int> > cells; // contains x,y coordinates of cells
@@ -58,7 +61,8 @@ void initial_placement() { // placing cells randomly in the grid
   }
   //srand(static_cast<unsigned int>(std::time(nullptr)));
   mt19937 generator(static_cast<unsigned int>(time(nullptr)));
-  unsigned int seed =rand(); // fixed seed for testing
+  unsigned int seed = 12345;
+  //rand(); // fixed seed for testing
   shuffle(random_indices.begin(), random_indices.end(), default_random_engine(seed));
 
   for (int i = 0; i < numCells; i++) {
@@ -119,7 +123,23 @@ void print_binary() {
   }
 }
 
+void outputGridToFile() {
+    ofstream outputFile(grid_file, ios_base::app); // append mode
+    if (!outputFile.is_open()) {
+        std::cerr << "Failed to open the file!" << std::endl;
+        return;
+    }
+    for (const auto& row : grid) {
+        for (const auto& cell : row) {
+            outputFile << cell << " ";
+        }
+        outputFile << "\n";
+    }
+    outputFile << "\n";
+    outputFile.close();
+}
 
+int count_grid = 1;
 void simulated_annealing(double &cost, double initial_temp, double final_temp) {
   // ofstream outputFile("tempVStwl.txt");
   //   if (!outputFile.is_open()) {
@@ -182,13 +202,18 @@ void simulated_annealing(double &cost, double initial_temp, double final_temp) {
         nets_wire_lengths = new_wire_lengths;
         max_net_coordinates = new_max_coordinates;
         min_net_coordinates = new_min_coordinates;
+        if ((count_grid % 10000) == 0) outputGridToFile();
+        count_grid ++;
       } else {
         double prob = (1 - exp((-1 * (change)) / temp)); // reject the swapping with the calculated probability
-        if (prob < 0.5) {
+        double uniform_prob = dis(gen); 
+        if (uniform_prob > prob) {
           cost = new_cost;
           nets_wire_lengths = new_wire_lengths;
           max_net_coordinates = new_max_coordinates;
           min_net_coordinates = new_min_coordinates;
+          if ((count_grid % 10000) == 0) outputGridToFile();
+          count_grid ++;
         } else { // reverse the swapping
           grid[row_x][col_x] = x_val;
           grid[row_y][col_y] = y_val;
@@ -216,7 +241,7 @@ void simulated_annealing(double &cost, double initial_temp, double final_temp) {
 
 int main() {
 
-  auto start = chrono::high_resolution_clock::now();
+  
   double cost = 0;
   readNetlist(test_case_file, numCells, numNets, numRows, numCols, nets, cellNets);
 
@@ -228,21 +253,21 @@ int main() {
 
   initial_placement(); // giving initial placement to the cells in the grid
   
-  cout << "Initial Grid (binary): " << endl;
-  print_binary(); // initial placement is printed in binary
-  cout << "Initial Grid (actual): " << endl;
-  print_grid();
+  //cout << "Initial Grid (binary): " << endl;
+  //print_binary(); // initial placement is printed in binary
+  //cout << "Initial Grid (actual): " << endl;
+  //print_grid();
   
   update = false;
   for (int i = 0; i < numNets; i++) cost += calculateWireLengths(i, -1, nets_wire_lengths, max_net_coordinates, min_net_coordinates);
-  cout << "Initial cost: " << cost << endl;
+  //cout << "Initial cost: " << cost << endl;
 
   double initial_temp = 500 * cost;
   double final_temp = ((5 * 1e-6) * cost) / numNets;
   double curr_temp = initial_temp;
 
-  cout << "Initial Temp: " << initial_temp << " Current Temp: " << curr_temp << " Final Temp: " << final_temp << endl;
-
+  //cout << "Initial Temp: " << initial_temp << " Current Temp: " << curr_temp << " Final Temp: " << final_temp << endl;
+  auto start = chrono::high_resolution_clock::now();
   simulated_annealing(cost, initial_temp, final_temp);
   
   auto end = chrono::high_resolution_clock::now();
@@ -257,5 +282,6 @@ int main() {
   cout << "• -- : Empty site\n";
   cout << "• DD : The site has the component number DD\n\n";
   cout << "Total time taken: " << duration.count() << " milliseconds\n";
+  outputGridToFile();
   return 0;
 }
