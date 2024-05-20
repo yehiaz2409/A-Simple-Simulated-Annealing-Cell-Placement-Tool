@@ -8,8 +8,9 @@
 #include <ctime>
 using namespace std;
 
-string test_case_file = "tests/t1.txt";
+string test_case_file = "tests/t3.txt";
 string grid_file = "grid.txt";
+string cost_file = "cost.txt";
 double cooling_rate = 0.95;
 random_device rd;
 mt19937 gen(rd());
@@ -135,6 +136,17 @@ void outputGridToFile() {
         }
         outputFile << "\n";
     }
+    outputFile << "\n";
+    outputFile.close();
+}
+
+void outputCost(double& cost) {
+    ofstream outputFile(cost_file, ios_base::app); // append mode
+    if (!outputFile.is_open()) {
+        cerr << "Failed to open the file!" << std::endl;
+        return;
+    }
+    outputFile << cost;
     outputFile << "\n";
     outputFile.close();
 }
@@ -283,5 +295,6 @@ int main() {
   cout << "• DD : The site has the component number DD\n\n";
   cout << "Total time taken: " << duration.count() << " milliseconds\n";
   outputGridToFile();
+  outputCost(cost);
   return 0;
 }
